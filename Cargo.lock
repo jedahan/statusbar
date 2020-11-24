@@ -277,6 +277,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "neli",
+ "nix",
  "nl80211",
  "serde",
  "serde_json",

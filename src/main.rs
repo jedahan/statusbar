@@ -1,4 +1,5 @@
 use chrono::TimeZone as _;
+use nix::sys::socket;
 
 static COLOR_GOOD: &'static str = "#8fc029";
 static COLOR_BAD: &'static str = "#dc2566";
@@ -75,6 +76,27 @@ fn make_battery_block(battery_manager: &battery::Manager) -> Block {
     }
 }
 
+fn get_if_ip(
+    name: String,
+) -> Result<Option<String>, nix::Error> {
+
+    let addrs = nix::ifaddrs::getifaddrs();
+    if addrs.is_err() { return Err(addrs.err().unwrap()) };
+
+    let addr = addrs?.find(|addr| addr.interface_name == name
+                           && addr.address.map_or(false, |address| address.family() == socket::AddressFamily::Inet));
+    if addr.is_none() { return Ok(None) };
+
+    let address = addr.unwrap().address;
+    if address.is_none() { return Ok(None) };
+
+    if let socket::SockAddr::Inet(address) = address.unwrap() {
+       return Ok(Some(address.ip().to_string()))
+    }
+
+    Ok(None)
+}
+
 fn get_if_name(
     nl80211sock: &mut nl80211::Socket,
     name: String,
@@ -94,11 +116,20 @@ fn get_if_name(
 }
 
 fn make_wifi_block(nl80211sock: &mut nl80211::Socket, name: String) -> Block {
-    let (full_text, color) = match get_if_name(nl80211sock, name) {
+    let (wifi_text, color) = match get_if_name(nl80211sock, name.clone()) {
         Ok(Some(ssid)) => (ssid, Some(COLOR_GOOD.to_string())),
         Ok(None) => ("no wifi".to_string(), Some(COLOR_UNKNOWN.to_string())),
         Err(_) => ("wifi error".to_string(), Some(COLOR_BAD.to_string())),
     };
+
+    let ip_text = match get_if_ip(name) {
+        Ok(Some(ip)) => ip,
+        Ok(None) => "no ip".to_string(),
+        Err(_) => "ip error".to_string(),
+    };
+
+    let full_text = format!("{} {}", wifi_text, ip_text);
+
     Block { full_text, color, separator: false }
 }
 

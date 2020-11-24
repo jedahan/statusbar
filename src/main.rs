@@ -70,7 +70,7 @@ fn make_battery_block(battery_manager: &battery::Manager) -> Block {
         (_, color) => ("", color),
     };
     Block {
-        full_text: format!("{}{:.1}%", state_char, percentage),
+        full_text: format!("{}{:.0}%", state_char, percentage),
         color,
         separator: false,
     }
@@ -142,10 +142,10 @@ fn main() {
 
     loop {
         let mut blocks = vec![];
-        blocks.push(make_time_block("TPE %H:%M", chrono_tz::Asia::Taipei));
-        blocks.push(make_time_block("SFO %H:%M", chrono_tz::America::Los_Angeles));
-        blocks.push(make_time_block("NYC %H:%M", chrono_tz::America::New_York));
-        blocks.push(make_wifi_block(&mut nl80211sock, "wlp3s0".to_string()));
+        blocks.push(make_time_block("%H:%M", chrono_tz::America::New_York));
+        blocks.push(make_time_block("%H:%M", chrono_tz::Europe::Helsinki));
+        blocks.push(make_time_block("%H:%M", chrono_tz::Asia::Tokyo));
+        blocks.push(make_wifi_block(&mut nl80211sock, "wlan0".to_string()));
         blocks.push(make_battery_block(&battery_manager));
 
         display_bar(blocks);
